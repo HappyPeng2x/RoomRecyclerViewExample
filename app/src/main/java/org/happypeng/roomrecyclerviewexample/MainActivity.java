@@ -93,8 +93,8 @@ public class MainActivity extends AppCompatActivity {
 
         PagedList.Config plConfig =
                 new PagedList.Config.Builder().setEnablePlaceholders(false)
-                .setPrefetchDistance(10)
-                .setPageSize(20).build();
+                .setPrefetchDistance(30)
+                .setPageSize(50).build();
 
         new LivePagedListBuilder<>
                 (mDB.getMyDao().getAllPaged(), plConfig)

@@ -10,8 +10,11 @@ import androidx.room.Room;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+
+import org.happypeng.roomrecyclerviewexample.paging.ViewableLivePagedListBuilder;
 
 public class MainActivity extends AppCompatActivity {
     private MyDatabase mDB;
@@ -38,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
                 (new MyPagedListAdapter.ClickListener() {
                     @Override
                     public void onClick(View aView, final MyEntry aEntry) {
+                        Log.d("LIST_BUILDER", "Clicked entry: " + aEntry.key);
+
                         new AsyncTask<Void, Void, Void>() {
                             @Override
                             protected Void doInBackground(Void... voids) {
@@ -96,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
                 .setPrefetchDistance(10)
                 .setPageSize(20).build();
 
-        new LivePagedListBuilder<>
+        new ViewableLivePagedListBuilder<>
                 (mDB.getMyDao().getAllPaged(), plConfig)
                 .build()
                 .observe(this, new Observer<PagedList<MyEntry>>() {

@@ -181,8 +181,8 @@ public class MainActivity extends AppCompatActivity {
         Log.d("TEST_SCROLL_POSITION", "Visible position range: " + firstVisiblePosition + " for " + (lastVisiblePosition - firstVisiblePosition) + " items");
 
         if (mViewableModeActivated) {
-            int firstKeyToLoad = mAdapter.getItemKey(Math.max(0, firstVisiblePosition - mPlConfig.pageSize));
-            int loadMinSize = 2 * mPlConfig.pageSize + lastVisiblePosition - firstVisiblePosition;
+            int firstKeyToLoad = mAdapter.getItemKey(firstVisiblePosition);
+            int loadMinSize = lastVisiblePosition - firstVisiblePosition;
 
             Log.d("TEST_SCROLL_POSITION", "Target loading key range: " + firstKeyToLoad + " for " + loadMinSize + " items");
 

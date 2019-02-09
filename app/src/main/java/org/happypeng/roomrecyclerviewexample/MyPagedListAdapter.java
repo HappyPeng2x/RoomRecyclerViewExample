@@ -32,10 +32,11 @@ public class MyPagedListAdapter extends PagedListAdapter<MyEntry, MyPagedListAda
         return new MyViewHolder(view, m_clickListener);
     }
 
+    // Position in the query is key - 1 (because key starts at 1, position at 0)
     public int getItemKey(int aPosition) {
         MyEntry entry = getItem(aPosition);
 
-        return (entry == null) ? 0 : entry.key;
+        return (entry == null) ? 0 : (entry.key - 1);
     }
 
     @Override

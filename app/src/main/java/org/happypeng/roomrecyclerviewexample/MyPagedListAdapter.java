@@ -32,6 +32,12 @@ public class MyPagedListAdapter extends PagedListAdapter<MyEntry, MyPagedListAda
         return new MyViewHolder(view, m_clickListener);
     }
 
+    public int getItemKey(int aPosition) {
+        MyEntry entry = getItem(aPosition);
+
+        return (entry == null) ? 0 : entry.key;
+    }
+
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         holder.bindTo(getItem(position));

@@ -42,7 +42,25 @@ import java.util.concurrent.Executor;
  * @param <Value> Item type being presented.
  */
 public final class ViewableLivePagedListBuilder<Key, Value> {
+    private static class KeyHolder<Key> {
+        private Key mKey;
+
+        KeyHolder(Key key) {
+            mKey = key;
+        }
+
+        Key getKey() {
+            return mKey;
+        }
+
+        void setKey(Key key) {
+            mKey = key;
+        }
+    }
+
     private Key mInitialLoadKey;
+    private KeyHolder<Key> mFirstKeyToLoadHolder;
+    private KeyHolder<Integer> mLoadMinSizeHolder;
     private PagedList.Config mConfig;
     private DataSource.Factory<Key, Value> mDataSourceFactory;
     private PagedList.BoundaryCallback mBoundaryCallback;
@@ -68,6 +86,9 @@ public final class ViewableLivePagedListBuilder<Key, Value> {
 
         mDataSourceFactory = dataSourceFactory;
         mConfig = config;
+
+        mFirstKeyToLoadHolder = new KeyHolder<>(null);
+        mLoadMinSizeHolder = new KeyHolder<>(null);
     }
 
     /**
@@ -157,8 +178,16 @@ public final class ViewableLivePagedListBuilder<Key, Value> {
     @NonNull
     @SuppressLint("RestrictedApi")
     public LiveData<PagedList<Value>> build() {
-        return create(mInitialLoadKey, mConfig, mBoundaryCallback, mDataSourceFactory,
+        return create(mInitialLoadKey, mFirstKeyToLoadHolder, mLoadMinSizeHolder, mConfig, mBoundaryCallback, mDataSourceFactory,
                 ArchTaskExecutor.getMainThreadExecutor(), mFetchExecutor);
+    }
+
+    public ViewableLivePagedListBuilder<Key, Value>
+    setLoadRange(Key firstKeyToLoad, int loadMinSize) {
+        mFirstKeyToLoadHolder.setKey(firstKeyToLoad);
+        mLoadMinSizeHolder.setKey(loadMinSize);
+
+        return this;
     }
 
     @AnyThread
@@ -166,6 +195,8 @@ public final class ViewableLivePagedListBuilder<Key, Value> {
     @SuppressLint("RestrictedApi")
     private static <Key, Value> LiveData<PagedList<Value>> create(
             @Nullable final Key initialLoadKey,
+            @NonNull final KeyHolder<Key> firstVisibleKey,
+            @NonNull final KeyHolder<Integer> loadSizeHint,
             @NonNull final PagedList.Config config,
             @Nullable final PagedList.BoundaryCallback boundaryCallback,
             @NonNull final DataSource.Factory<Key, Value> dataSourceFactory,
@@ -189,8 +220,26 @@ public final class ViewableLivePagedListBuilder<Key, Value> {
             @Override
             protected PagedList<Value> compute() {
                 @Nullable Key initializeKey = initialLoadKey;
-                if (mList != null) {
+                @Nullable Key firstVisibleKeyValue = firstVisibleKey.getKey();
+                @Nullable Integer loadSizeHintValue = loadSizeHint.getKey();
+                PagedList.Config localConfig = config;
+
+                if (firstVisibleKeyValue != null) {
+                    initializeKey = firstVisibleKeyValue;
+                } else if (mList != null) {
                     initializeKey = (Key) mList.getLastKey();
+                }
+
+                if (loadSizeHintValue != null && loadSizeHintValue > config.initialLoadSizeHint) {
+                    loadSizeHintValue = config.pageSize * (((loadSizeHintValue % config.pageSize == 0) ? 0 : 1) + (loadSizeHintValue / config.pageSize));
+
+                    localConfig =
+                            new PagedList.Config.Builder()
+                                    .setEnablePlaceholders(config.enablePlaceholders)
+                                    .setPrefetchDistance(config.prefetchDistance)
+                                    .setMaxSize(config.maxSize)
+                                    .setInitialLoadSizeHint(loadSizeHintValue)
+                                    .setPageSize(config.pageSize).build();
                 }
 
                 do {
@@ -201,9 +250,9 @@ public final class ViewableLivePagedListBuilder<Key, Value> {
                     mDataSource = dataSourceFactory.create();
                     mDataSource.addInvalidatedCallback(mCallback);
 
-                    Log.d("LIST_BUILDER", "Initialize key: " + initializeKey);
+                    Log.d("TEST_LIST_BUILDER", "Initialize key: " + initializeKey + ", range size = " + localConfig.initialLoadSizeHint);
 
-                    mList = new PagedList.Builder<>(mDataSource, config)
+                    mList = new PagedList.Builder<>(mDataSource, localConfig)
                             .setNotifyExecutor(notifyExecutor)
                             .setFetchExecutor(fetchExecutor)
                             .setBoundaryCallback(boundaryCallback)

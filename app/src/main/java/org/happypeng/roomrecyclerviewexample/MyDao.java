@@ -27,4 +27,7 @@ public interface MyDao {
 
     @Update
     void update(MyEntry aEntry);
+
+    @Query("SELECT MAX(`key`) FROM MyEntry")
+    int getMax();
 }
